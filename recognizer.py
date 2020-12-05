@@ -1,5 +1,4 @@
 from imutils.video import VideoStream
-# from imutils.video import FPS
 import face_recognition
 import imutils
 import pickle
@@ -97,8 +96,8 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
         else:
             currentPerson = currentPerson.split(' ', 1)
             currentPersonId = int(currentPerson[0])
-            if currentPersonId == 1: # remove this line
-                return # remove this line
+            if currentPersonId == 1: # test case; to remove
+                return
             eventId = None
             if button == buttonStart:
                 eventId = 1
@@ -160,7 +159,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
     GPIO.add_event_detect(buttonBreak, GPIO.RISING, callback=lambda x: event_callback(buttonBreak), bouncetime=bounceTime)
     GPIO.add_event_detect(buttonTask, GPIO.RISING, callback=lambda x: event_callback(buttonTask), bouncetime=bounceTime)
 
-    print('[INFO] Loading encodings & face detector.')
+    print('[INFO] Loading encodings from file.')
     try:
         data = pickle.loads(open('encodings.pickle', 'rb').read())
     except Exception as e:
@@ -168,11 +167,9 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
         raise Exception('Error on loading pickle.')
 
     detector = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    print('[INFO] starting video stream, press "q" to exit.')
+    print('[INFO] Starting video stream, press "q" to exit.')
     vs = VideoStream(src=cameraId).start()
     sleep(1.3) # Warm up
-
-    # fps = FPS().start()
 
     while True:
         frame = vs.read()
@@ -237,11 +234,6 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
             break
-
-        # fps.update()
-    # fps.stop()
-    # print('[INFO] Elapsed time: {:.2f}'.format(fps.elapsed()))
-    # print('[INFO] Approx. FPS: {:.2f}'.format(fps.fps()))
 
     # cleanup
     cv2.destroyAllWindows()
