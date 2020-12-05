@@ -205,10 +205,10 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             currentStatus = -1
             if True in matches:
                 currentStatus = 1
-                matchedIdxs = [i for (i, b) in enumerate(matches) if b]
+                matchedIds = [i for (i, b) in enumerate(matches) if b]
                 counts = {}
 
-                for i in matchedIdxs:
+                for i in matchedIds:
                     name = data['names'][i]
                     counts[name] = counts.get(name, 0) + 1
 
