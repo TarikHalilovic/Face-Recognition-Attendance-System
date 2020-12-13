@@ -2,7 +2,7 @@ from imutils.video import VideoStream
 import face_recognition
 import imutils
 import pickle
-from time import sleep
+from time import sleep, time as getCurrentTime
 import cv2
 from api_service import post_action
 import RPi.GPIO as GPIO
@@ -10,7 +10,7 @@ import lcddriver
 
 currentPerson = ""
 currentStatus = 0 # 0 = No face; -1 = Unknown; 1 = Known
-ignoreCall = 0
+currentTime = getCurrentTime()
 
 
 def getBoxArea(aBox):
@@ -24,7 +24,7 @@ def getBiggestBoxInList(allBoxes):
     elif len(allBoxes) == 1:
         return allBoxes
     currentBiggest = allBoxes[0]
-    currentBiggestArea = getBoxArea(currentBiggest) # currentBiggest[0]
+    currentBiggestArea = getBoxArea(currentBiggest)
     for i in range(1, len(allBoxes)):
         areaOfABox = getBoxArea(allBoxes[i])
         if currentBiggestArea < areaOfABox:
@@ -58,15 +58,13 @@ def buzzer_error(buzzer, dutyCycle):
 
 def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, serverUrl, username, password):
     global currentPerson, currentStatus
-    shortSleepTime = 1.5
-    # longSleepTime = 2
+    shortSleepTime = 1.6
     buttonStart = 19
     buttonEnd = 24
     buttonBreak = 21
     buttonTask = 22
     buzzerPin = 13
-    buzzerFrequency = 1300
-    bounceTime = 3800
+    bounceTime = 250
     buzzerDutyCycle = 0.7
     display = lcddriver.lcd()
 
@@ -76,13 +74,15 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
     GPIO.setup(buttonBreak, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup(buttonTask, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup(buzzerPin, GPIO.OUT)
-    buzzer = GPIO.PWM(buzzerPin, buzzerFrequency)
+    buzzer = GPIO.PWM(buzzerPin, 1200)
 
     def event_callback(button):
-        global currentPerson, ignoreCall, currentStatus
-        if ignoreCall == 1:
+        global currentPerson, currentStatus, currentTime
+        # To prevent button bouncing
+        if currentTime+4.4 > getCurrentTime():
+            print('[ALERT] Bounce prevented by time')
             return
-        ignoreCall = 1
+        currentTime = getCurrentTime()
         if currentStatus == 0:
             print('No one detected, please look at the camera and try again.')
             display.lcd_display_string("No one detected", 1)
@@ -97,6 +97,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             currentPerson = currentPerson.split(' ', 1)
             currentPersonId = int(currentPerson[0])
             if currentPersonId == 1: # test case; to remove
+                print('[ALERT] Id is 1, This should not be happening')
                 return
             eventId = None
             if button == buttonStart:
@@ -152,7 +153,6 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                 buzzer_error(buzzer, buzzerDutyCycle)
         sleep(shortSleepTime)
         display.lcd_clear()
-        ignoreCall = 0
 
     GPIO.add_event_detect(buttonStart, GPIO.RISING, callback=lambda x: event_callback(buttonStart), bouncetime=bounceTime)
     GPIO.add_event_detect(buttonEnd, GPIO.RISING, callback=lambda x: event_callback(buttonEnd), bouncetime=bounceTime)
