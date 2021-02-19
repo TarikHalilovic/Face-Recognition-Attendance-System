@@ -9,7 +9,7 @@
 # Make sure that lcddriver is in the same directory though!
 # Credit for this code goes to "natbett" of the Raspberry Pi Forum 18/02/13
 
-import i2c_lib
+from Lcd import i2c_lib
 from time import *
 
 # LCD Address 

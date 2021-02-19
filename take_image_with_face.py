@@ -81,8 +81,8 @@ def face_image_taker(name, cameraId, scale_factor, minSizeTuple, minNeighbour):
             print('[INFO] Please manually remove images that do not show face properly. At least 1 image is needed.')
             countOfImagesLeft = len([name for name in os.listdir(dirName)])
             redoImageTaking = input('Do you want to redo face image adding process? y/N -> ')
-            if redoImageTaking == 'y' or countOfImagesLeft < 3:
-                if countOfImagesLeft < 3:
+            if redoImageTaking == 'y' or countOfImagesLeft < 1:
+                if countOfImagesLeft < 1:
                     print('[INFO] Can not continue, not enough face images.')
                 print('[INFO] Deleting images, then redoing image taking process.')
                 count = 0

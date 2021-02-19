@@ -1,6 +1,6 @@
 import requests
 from requests.auth import HTTPBasicAuth
-from ActionResponse import ActionResponse
+from Model.ActionResponse import ActionResponse
 
 def post_action(userId, buttonId, serverUrl, username, password):
     ar = ActionResponse(True, False, 0, None, None, None)
@@ -46,5 +46,4 @@ def add_person_to_external_system(firstName, lastName, serverUrl, username, pass
             return int(response.json()["id"])
     except:
         print("[ERROR] Api request timed out.")
-    finally:
-        return 0
+        raise Exception("Request timed out exception")

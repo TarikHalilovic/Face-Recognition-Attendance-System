@@ -13,7 +13,6 @@ def adding_to_recognizer(cameraId, scale_factor, minSizeTuple, minNeighbour, ser
         user_id = existingId
     else:
         user_id = add_person_to_external_system(firstName, lastName, serverUrl, username, password)
-
     success = face_image_taker(str(user_id) + ' ' + firstName + ' ' + lastName,
                                cameraId, scale_factor, minSizeTuple, minNeighbour)
 
