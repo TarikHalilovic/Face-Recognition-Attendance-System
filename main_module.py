@@ -1,5 +1,7 @@
 # install opencv-contrib-python, rpi.gpio, dlib, face_recognition, imutils, requests, lcd driver
 # run -> python3 main_module.py [-r 1] [-m 0]
+# [-r 1] Auto start in recognition mode
+# [-m 0] Run without video feedback on display
 
 from add_to_recognizer import adding_to_recognizer
 from person_service import edit_person, getPeople, remove_person, list_people
@@ -14,8 +16,8 @@ args = vars(ap.parse_args())
 
 cameraId = 0
 scaleFactor = 1.2
-minSizeTuple = (50, 50)
-tolerance = 0.53 # Lower is more strict #0.42
+minSizeTuple = (90, 90)
+tolerance = 0.52 # Lower is more strict #0.42
 minNeighbour = 6
 runMode = 1 # 1 - Shows camera detection on desktop, 0 - Does not show
 username = 'Admin'
