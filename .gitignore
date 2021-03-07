@@ -1,2 +1,5 @@
 /dataset/
 /encodings.pickle
+/__pycache__
+/.idea
+recognizer_hog.py
