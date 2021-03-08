@@ -38,7 +38,7 @@ def add_person_to_external_system(firstName, lastName, serverUrl, username, pass
                                  timeout=3.5
                                  )
         if response.status_code != 201:
-            print(f'[ERROR] Server error. Status code -> {response.status_code})
+            print(f'[ERROR] Server error. Status code -> {response.status_code}')
             print('[ERROR] Person has not been added to external database.')
             return 0
         else:

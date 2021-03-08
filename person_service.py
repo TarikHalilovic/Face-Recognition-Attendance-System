@@ -5,7 +5,7 @@ from take_image_with_face import face_image_taker
 
 
 def edit_person(fullName, cameraId, scale_factor, minSizeTuple, minNeighbour):
-    print(f'[INFO] Editing -> {fullName})
+    print(f'[INFO] Editing -> {fullName}')
     print('Please choose: ')
     print('1.) Rename')  # change folder name, retrain
     print('2.) Retake facial data')  # delete folder, retake images, retrain
