@@ -14,8 +14,7 @@ def train():
     # loop over the images
     for (i, imagePath) in enumerate(imagePaths):
 
-        print("[INFO] processing image {}/{}".format(i + 1,
-                                                     len(imagePaths)))
+        print(f'[INFO] processing image {(i+1)}/{(len(imagePaths))}')
         # extract the person name from the image path
         name = imagePath.split(os.path.sep)[-2]
 

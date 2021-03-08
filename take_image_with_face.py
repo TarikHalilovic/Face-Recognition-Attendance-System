@@ -12,20 +12,21 @@ def delete_from_folder(dir_name):
             elif os.path.isdir(file_path):
                 os.rmdir(file_path)
         except Exception as e:
-            print('[ERROR] Failed to delete %s. Reason: %s' % (file_path, e))
-            return False
+            print(f'[ERROR] Failed to delete {file_path}. Reason: {e}')
+            raise Exception('Couldn\'t delete files.')
 
 
 def face_image_taker(name, cameraId, scale_factor, minSizeTuple, minNeighbour):
-    dirName = './dataset/' + name
+    dirName = f'./dataset/{name}'
     if not os.path.exists(dirName):
         os.makedirs(dirName)
-        print('[INFO] Directory for ' + name + '\'s images created.')
+        print(f'[INFO] Directory for {name}\'s images created.')
     else:
         print('[ERROR] Name already exists.')
         return False
 
     count = 0
+    needsAtLeastImages = 1
 
     while True:
         print('Press "t" to take a image.')
@@ -67,22 +68,22 @@ def face_image_taker(name, cameraId, scale_factor, minSizeTuple, minNeighbour):
                 break
             if key == ord('t'):
                 count += 1
-                fileName = dirName + "/" + name + str(count) + ".jpg"
+                fileName = f'{dirName}/{name}{count}.jpg'
                 cv2.imwrite(fileName, frame)
         video_capture.release()
         cv2.destroyAllWindows()
 
-        if count < 1:
-            print('[ERROR] Deleting directory for ' + name + '. Not enough images taken.')
+        if count < needsAtLeastImages:
+            print(f'[ERROR] Deleting directory for {name}. Not enough images taken.')
             delete_from_folder(dirName)
             os.rmdir(dirName)
             return False
         else:
-            print('[INFO] Please manually remove images that do not show face properly. At least 1 image is needed.')
+            print(f'[INFO] Please manually remove images that do not show face properly. At least {needsAtLeastImages} image is needed.')
             countOfImagesLeft = len([name for name in os.listdir(dirName)])
             redoImageTaking = input('Do you want to redo face image adding process? y/N -> ')
-            if redoImageTaking == 'y' or countOfImagesLeft < 1:
-                if countOfImagesLeft < 1:
+            if redoImageTaking == 'y' or countOfImagesLeft < needsAtLeastImages:
+                if countOfImagesLeft < needsAtLeastImages:
                     print('[INFO] Can not continue, not enough face images.')
                 print('[INFO] Deleting images, then redoing image taking process.')
                 count = 0

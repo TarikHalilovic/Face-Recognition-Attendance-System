@@ -19,7 +19,7 @@ scaleFactor = 1.2
 minSizeTuple = (90, 90)
 tolerance = 0.52 # Lower is more strict #0.42
 minNeighbour = 6
-runMode = 1 # 1 - Shows camera detection on desktop, 0 - Does not show
+runMode = 1 # 1 - Shows video feedback on desktop, 0 - Does not show
 username = 'Admin'
 password = 'a'
 serverUrl = 'http://192.168.137.1:8080'
@@ -33,19 +33,19 @@ if args["mode"] is not None:
 
 while True:
     print('Please choose: ')
-    print('1. Run face recognition (default)')
-    print('2. Add person')
-    print('3. Edit person')
-    print('4. Remove person')
-    print('5. Retrain model')
-    print('6. Exit')
+    print('1.) Run face recognition (default)')
+    print('2.) Add user')
+    print('3.) Edit user')
+    print('4.) Remove user')
+    print('5.) Retrain model')
+    print('6.) Exit')
     if args["run"] is None:
         runWhat = input()
     if runWhat == '2':
         adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, serverUrl, username, password)
     elif runWhat == '3':
         people = getPeople()
-        print('Please choose person to edit.')
+        print('Please choose user to edit.')
         list_people(people)
         print(str(len(people) + 1) + ". CANCEL (default)")
         choice = int(input())
@@ -54,7 +54,7 @@ while True:
         edit_person(people[choice - 1], cameraId, scaleFactor, minSizeTuple, minNeighbour)
     elif runWhat == '4':
         people = getPeople()
-        print('Please choose person to remove.')
+        print('Please choose user to remove.')
         list_people(people)
         print(str(len(people) + 1) + ". CANCEL (default)")
         choice = int(input())
