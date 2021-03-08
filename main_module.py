@@ -47,7 +47,7 @@ while True:
         people = getPeople()
         print('Please choose user to edit.')
         list_people(people)
-        print(str(len(people) + 1) + ". CANCEL (default)")
+        print(f'{(len(people) + 1)}.) CANCEL (default)')
         choice = int(input())
         if choice - 1 >= len(people):
             continue
@@ -56,7 +56,7 @@ while True:
         people = getPeople()
         print('Please choose user to remove.')
         list_people(people)
-        print(str(len(people) + 1) + ". CANCEL (default)")
+        print(f'{(len(people) + 1)}.) CANCEL (default)')
         choice = int(input())
         if choice - 1 >= len(people):
             continue
