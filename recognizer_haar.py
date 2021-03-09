@@ -222,7 +222,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             
             frame = vs.read()
             # choose lower width for performance
-            frame = resize(frame, width=750)
+            frame = resize(frame, width=740)
             # increase brightness and contrast for a bit
             frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
 
