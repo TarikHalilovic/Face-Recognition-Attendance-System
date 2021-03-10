@@ -2,6 +2,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 from Model.ActionResponse import ActionResponse
 
+
 def post_action(userId, buttonId, serverUrl, username, password):
     ar = ActionResponse(True, False, 0, None, None, None)
     try:
@@ -25,9 +26,10 @@ def post_action(userId, buttonId, serverUrl, username, password):
             ar.fullName = data["fullName"]
             ar.messageCode = data["messageCode"]
     except:
-        print("[ERROR] Api request timed out.")
+        print('[ERROR] Api request timed out.')
     finally:
         return ar
+
 
 def add_person_to_external_system(firstName, lastName, serverUrl, username, password):
     try:
@@ -45,5 +47,21 @@ def add_person_to_external_system(firstName, lastName, serverUrl, username, pass
             print('[INFO] Person added to external server database.')
             return int(response.json()["id"])
     except:
-        print("[ERROR] Api request timed out.")
-        raise Exception("Request timed out exception")
+        print('[ERROR] Api request timed out.')
+        raise Exception('Request timed out exception')
+
+
+def server_connection_test(serverUrl, username, password):
+    try:
+        response = requests.get(url=f'{serverUrl}/api/account/validate-login',
+                                 auth=HTTPBasicAuth(username, password),
+                                 timeout=3.5
+                                 )
+        if response.status_code != 200:
+            print(f'[ERROR] Server error. Not connected to server. Status code -> {response.status_code}')
+        else:
+            print('[INFO] Connection with server established successfully.')
+    except:
+        print('[ERROR] Server error. Not connected to server.')
+        raise Exception('Request timed out exception')
+    

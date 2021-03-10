@@ -6,6 +6,7 @@
 from add_to_recognizer import adding_to_recognizer
 from person_service import edit_person, getPeople, remove_person, list_people
 from trainer import train
+from api_service import server_connection_test
 import recognizer_haar as recognizer
 import argparse
 
@@ -17,13 +18,16 @@ args = vars(ap.parse_args())
 cameraId = 0
 scaleFactor = 1.2
 minSizeTuple = (90, 90)
-tolerance = 0.52 # Lower is more strict #0.42
+tolerance = 0.52 # Lower is more strict
 minNeighbour = 6
 runMode = 1 # 1 - Shows video feedback on desktop, 0 - Does not show
 username = 'Admin'
 password = 'a'
 serverUrl = 'http://192.168.137.1:8080'
 print('[INFO] Attendance system running.')
+
+# Check if you can reach server
+server_connection_test(serverUrl, username, password)
 
 runWhat = None
 if args["run"] is not None:

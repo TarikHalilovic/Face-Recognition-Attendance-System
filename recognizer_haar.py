@@ -24,7 +24,7 @@ def getBoxArea(aBox): # actually rectangle not box
     return (aBox[1] - aBox[3]) * (aBox[2] - aBox[0])
 
 
-def getBiggestBoxInList(allBoxes): # literally returns box in LIST
+def getBiggestBoxInList(allBoxes): # returns box in array
     if len(allBoxes) == 0:
         return allBoxes
     elif len(allBoxes) == 1:
@@ -67,14 +67,14 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                   ,username, password, runMode):
     try:
         global userLocked, timeOfLock, whoIsLocked, inActionLock, statusForInLock, currentStatus, currentPerson
-        alpha = 1.20 # Contrast control (1.0-3.0) #1.2
-        beta = 21 # Brightness control (0-100) #17
+        alpha = 1.20 # Contrast control (1.0-3.0)
+        beta = 21 # Brightness control (0-100)
 
         # Buttons to GPIO pins (physical numbering)
-        buttonStart = 15
-        buttonEnd = 24
+        buttonStart = 11
         buttonBreak = 21
         buttonTask = 22
+        buttonEnd = 24
         buzzerPin = 13
 
         bounceTime = 230 # Used when setting up events as bounce prevent time
@@ -121,7 +121,6 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                 #if debug
                 print('[INFO] Bounce prevented (not enough time passed between actions.')
                 return
-            
             
             # If check below needs personId, eventId and currentTime
             personId = None
@@ -273,7 +272,8 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             if runMode == 1 and userLocked == True:
                 # WhoIsLocked[1] is name/Unknown
                 timeLeft = round(timeOfLock+6 - thisFrameTime,1)
-                cv2.putText(frame, f'{whoIsLocked[1]} ({timeLeft}s)', (38, 38), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
+                if timeLeft>0: # Countdown goes on if action ran
+                    cv2.putText(frame, f'{whoIsLocked[1]} ({timeLeft}s)', (38, 38), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
 
             if len(names) > 0:
                 currentPerson = names[0] # Pick first and only from array
@@ -281,6 +281,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                 if userLocked == False and inActionLock == False:
                         userLocked = True
                         timeOfLock = thisFrameTime
+                        display.lcd_clear()
                         display.lcd_display_string("Choose input", 1)
                         if currentStatus == 1:
                             statusForInLock = 1
@@ -303,6 +304,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                     display.lcd_clear()
                     timeOfLock = thisFrameTime # refresh time of lock
                     statusForInLock = 1
+                    display.lcd_display_string("Choose input", 1)
                     display.lcd_display_string(currentPerson[1], 2)
                     whoIsLocked = currentPerson
                 elif timeOfLock+6 < thisFrameTime:
@@ -318,8 +320,6 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                     cv2.rectangle(frame, (left, top), (right, bottom),
                                   (0, 255, 0), 2)
                     y = top - 15 if top - 15 > 15 else top + 15
-                    #if currentStatus == 1:
-                    #    name = name.split(' ', 1)[1]
                     cv2.putText(frame, currentPerson[1], (left, y), cv2.FONT_HERSHEY_SIMPLEX,
                                 1, (0, 255, 0), 2)
                 # display video
