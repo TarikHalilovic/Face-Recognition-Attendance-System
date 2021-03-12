@@ -264,7 +264,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             # This is used just to show who is locked in on video feedback
             if runMode == 1 and userLocked == True:
                 timeLeft = round(timeOfLock+lockInTime - thisFrameTime,1)
-                if timeLeft>0: # Countdown goes on if action ran
+                if timeLeft > 0: # Countdown goes on if action ran
                     # WhoIsLocked[1] is name/Unknown
                     cv2.putText(frame, f'{whoIsLocked[1]} ({timeLeft}s)', (38, 38), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
 

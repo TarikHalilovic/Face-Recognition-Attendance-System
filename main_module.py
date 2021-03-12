@@ -9,28 +9,38 @@ from trainer import train
 from api_service import server_connection_test
 import recognizer_haar as recognizer
 import argparse
+import configparser
 
+# Preparing arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-r", "--run", required=False, help="Add '-r 1' to run in recognition mode")
 ap.add_argument("-m", "--mode", required=False, help="Add '-m 0' to run with no camera feed output") # To save resources
 ap.add_argument("-i", "--info", required=False, help="Add '-i 0' to run with no detailed INFO messages") # More INFO while running
 args = vars(ap.parse_args())
 
-cameraId = 0
-scaleFactor = 1.2
-minSizeTuple = (90, 90)
-tolerance = 0.52 # Lower is more strict
-minNeighbour = 6
-runMode = 1 # 1 - Shows video feedback on desktop, 0 - Does not show
-username = 'Admin'
-password = 'a'
-serverUrl = 'http://192.168.137.1:8080'
-showDetailInfo = True
+print('[INFO] Loading configuration.')
+# Config
+Config = configparser.ConfigParser()
+Config.read("/home/pi/Desktop/face_recognition_for_attendance_rpi/config.ini")
+
+cameraId = int(Config.get('Camera', 'Id'))
+scaleFactor = float(Config.get('RecognitionConfig', 'ScaleFactor'))
+minSizeTuple = (int(Config.get('RecognitionConfig', 'MinSizeTupleValueOne')), 
+                (int(Config.get('RecognitionConfig', 'MinSizeTupleValueTwo'))))
+tolerance = float(Config.get('RecognitionConfig', 'Tolerance'))
+minNeighbour = int(Config.get('RecognitionConfig', 'MinNeighbour'))
+username = Config.get('Server', 'Username')
+password = Config.get('Server', 'Password') 
+serverUrl = Config.get('Server', 'ServerUrl')
+            
 print('[INFO] Attendance system running.')
 
 # Check if you can reach server
 server_connection_test(serverUrl, username, password)
 
+# Additional config
+runMode = 1 # 1 - Shows video feedback on desktop, 0 - Does not show
+showDetailInfo = True
 runWhat = None
 if args["run"] is not None:
     runWhat = args["run"]
