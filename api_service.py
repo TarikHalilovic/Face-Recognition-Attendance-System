@@ -13,7 +13,7 @@ def post_action(userId, buttonId, serverUrl, username, password):
             auth=HTTPBasicAuth(username, password),
             timeout=8
         )
-        #               serverError, isSuccessful, statusCode, message, fullName, errorCode
+        # serverError, isSuccessful, statusCode, message, fullName, errorCode
         # ar = ActionResponse(True, False, response.status_code, None, None, None)
         ar.statusCode = response.status_code
         if response.status_code != 200:
@@ -63,5 +63,4 @@ def server_connection_test(serverUrl, username, password):
             print('[INFO] Connection with server established successfully.')
     except:
         print('[ERROR] Server error. Not connected to server.')
-        raise Exception('Request timed out exception')
     

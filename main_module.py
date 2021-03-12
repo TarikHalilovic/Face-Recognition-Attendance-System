@@ -13,6 +13,7 @@ import argparse
 ap = argparse.ArgumentParser()
 ap.add_argument("-r", "--run", required=False, help="Add '-r 1' to run in recognition mode")
 ap.add_argument("-m", "--mode", required=False, help="Add '-m 0' to run with no camera feed output") # To save resources
+ap.add_argument("-i", "--info", required=False, help="Add '-i 0' to run with no detailed INFO messages") # More INFO while running
 args = vars(ap.parse_args())
 
 cameraId = 0
@@ -24,6 +25,7 @@ runMode = 1 # 1 - Shows video feedback on desktop, 0 - Does not show
 username = 'Admin'
 password = 'a'
 serverUrl = 'http://192.168.137.1:8080'
+showDetailInfo = True
 print('[INFO] Attendance system running.')
 
 # Check if you can reach server
@@ -34,7 +36,9 @@ if args["run"] is not None:
     runWhat = args["run"]
 if args["mode"] is not None:
     runMode = int(args["mode"])
-
+if args["info"] is not None and args["info"] == 0:
+    showDetailInfo = False
+    
 while True:
     print('Please choose: ')
     print('1.) Run face recognition (default)')
@@ -71,5 +75,5 @@ while True:
         break
     else:
         recognizer.run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, serverUrl, username,
-                                 password, runMode)
+                                 password, runMode, showDetailInfo)
 print('[INFO] Attendance system stopping.')

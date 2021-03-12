@@ -12,11 +12,15 @@ def adding_to_recognizer(cameraId, scale_factor, minSizeTuple, minNeighbour, ser
     if existingId != '':
         user_id = existingId
     else:
-        user_id = add_person_to_external_system(firstName, lastName, serverUrl, username, password)
+        try:
+            user_id = add_person_to_external_system(firstName, lastName, serverUrl, username, password)
+        except Exception:
+            print('[WARNING] No new additions to the recognition system.')
+            return
     success = face_image_taker(f'{user_id} {firstName} {lastName}',
                                cameraId, scale_factor, minSizeTuple, minNeighbour)
 
     if not success:
-        print('[INFO] No new additions to the face recognition model.')
+        print('[INFO] No new additions to the recognition system.')
     else:
         train()

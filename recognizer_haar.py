@@ -4,6 +4,8 @@ from time import sleep, time as getCurrentTime
 from api_service import post_action
 from Lcd import lcddriver
 from Model.LastPersonEntry import LastPersonEntry
+from faceSize import getBoxArea
+from faceSize import getBiggestBoxInList
 import face_recognition
 import pickle
 import cv2
@@ -17,28 +19,7 @@ timeOfLock = None
 whoIsLocked = None
 inActionLock = False
 statusForInLock = 0
-lastPersonEntry = None # Could be 'Unknown' user as well
-
-
-def getBoxArea(aBox): # actually rectangle not box
-    return (aBox[1] - aBox[3]) * (aBox[2] - aBox[0])
-
-
-def getBiggestBoxInList(allBoxes): # returns box in array
-    if len(allBoxes) == 0:
-        return allBoxes
-    elif len(allBoxes) == 1:
-        return allBoxes
-    biggestBoxInAList = []
-    currentBiggest = allBoxes[0]
-    currentBiggestArea = getBoxArea(currentBiggest)
-    for i in range(1, len(allBoxes)):
-        areaOfABox = getBoxArea(allBoxes[i])
-        if currentBiggestArea < areaOfABox:
-            currentBiggestArea = areaOfABox
-            currentBiggest = allBoxes[i]
-    biggestBoxInAList.append(currentBiggest)
-    return biggestBoxInAList
+lastPersonEntry = None
 
 
 def buzzer_ok(buzzer, dutyCycle):
@@ -64,7 +45,7 @@ def buzzer_error(buzzer, dutyCycle):
 
 
 def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, serverUrl
-                  ,username, password, runMode):
+                  ,username, password, runMode, showDetailInfo):
     try:
         global userLocked, timeOfLock, whoIsLocked, inActionLock, statusForInLock, currentStatus, currentPerson
         alpha = 1.20 # Contrast control (1.0-3.0)
@@ -79,6 +60,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
 
         bounceTime = 230 # Used when setting up events as bounce prevent time
         buzzerDutyCycle = 0.7
+        lockInTime = 7 # How much time user has to choose action
         
         display = lcddriver.lcd() # My display has 16 characters maximum; 2 lines
 
@@ -104,11 +86,10 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                 raise Exception(f'Button was not mapped to event. Unknown button: {button}')
             return eventId
 
+
         def event_callback(button):
             # Setting up globals
-            global currentTime, whoIsLocked, inActionLock, statusForInLock, lastPersonEntry
-            
-            actionTime = getCurrentTime()
+            global whoIsLocked, inActionLock, statusForInLock, lastPersonEntry
             
             if inActionLock:
                 print('[INFO] Action prevented, ongoing action.')
@@ -116,29 +97,34 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             if whoIsLocked is None:
                 print('[INFO] Action prevented, nobody in lock.')
                 return
-            # To prevent button bouncing
-            if currentTime+3.3 > actionTime:
-                #if debug
-                print('[INFO] Bounce prevented (not enough time passed between actions.')
-                return
+                
+            actionTime = getCurrentTime()
             
-            # If check below needs personId, eventId and currentTime
-            personId = None
+            # To prevent button bouncing
+            #if (lastPersonEntry is not None and 
+            #    lastPersonEntry.time+9 > actionTime):
+            #    # remove print in final version
+            #    if showDetailInfo:
+            #        print('[INFO] Bounce prevented (not enough time passed between actions.')
+            #    return
+            
             eventId = map_button_to_eventId(button)
-            if statusForInLock == 1:
-                personId = whoIsLocked[0] # whoIsLocked[0] is ID(int) here
+            
             # Prevent bouncing if last person = current person in X seconds timeframe
             if (lastPersonEntry is not None and
-                    lastPersonEntry.personId == personId and
+                    lastPersonEntry.personId == whoIsLocked[0] and
                     lastPersonEntry.eventId == eventId and
                     actionTime < lastPersonEntry.time + 13):
-                print(f'[INFO] Action prevented. Same person, same action. Minimum time has not passed. Time remaining is {(round(lastPersonEntry.time+13 - actionTime, 1))}s.')
+                # remove print in final version
+                if showDetailInfo:
+                    print(f'[INFO] Action prevented. Same person, same action. Minimum time has not passed. Time remaining is {(round(lastPersonEntry.time+13 - actionTime, 1))}s.')
                 return
 
             inActionLock = True # Running the command, no interrupts
             display.lcd_clear()
 
-            lastPersonEntry = LastPersonEntry(actionTime, eventId, None) # This is new last person
+            # This is new last person
+            lastPersonEntry = LastPersonEntry(actionTime, eventId, whoIsLocked[0]) 
 
             if statusForInLock == -1:
                 print('Message -> Person not recognized, please look at camera and try again.')
@@ -149,12 +135,17 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                 display.lcd_display_string("Please try again", 2)
                 buzzer_error(buzzer, buzzerDutyCycle)
             else: # statusForInLock is 1
-                lastPersonEntry.personId = personId # Id was None, now update it
-                
-                response = post_action(personId, eventId, serverUrl, username, password)
-                print(f'[INFO] User logged with id -> {personId}')
+                response = post_action(whoIsLocked[0], eventId, serverUrl, username, password)
+                # remove print in final version
+                if showDetailInfo:
+                    print(f'[INFO] User logged with id -> {whoIsLocked[0]}')
                 if not response.serverError:
                     if response.message is not None: 
+                        # prepare name before printing on lcd
+                        if (response.fullName is not None and 
+                            len(response.fullName) > 16):
+                            response.fullName = response.fullName[0,16]
+                        
                         print('Message -> ' + response.message)
                         if response.messageCode == 1:
                             display.lcd_display_string("  Work already", 1)
@@ -198,6 +189,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             display.lcd_clear()
             inActionLock = False
 
+
         GPIO.add_event_detect(buttonStart, GPIO.RISING, callback=lambda x: event_callback(buttonStart), bouncetime=bounceTime)
         GPIO.add_event_detect(buttonEnd, GPIO.RISING, callback=lambda x: event_callback(buttonEnd), bouncetime=bounceTime)
         GPIO.add_event_detect(buttonBreak, GPIO.RISING, callback=lambda x: event_callback(buttonBreak), bouncetime=bounceTime)
@@ -209,7 +201,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             data = pickle.loads(open('/home/pi/Desktop/face_recognition_for_attendance_rpi/encodings.pickle', 'rb').read())
         except Exception as e:
             print(f'[ERROR] No faces in the model. Error: {e}')
-            raise Exception('Error on loading pickle.')
+            raise Exception('Error on loading pickle file.')
 
         detector = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         print('[INFO] Starting video stream, press "q" to exit.')
@@ -221,7 +213,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             
             frame = vs.read()
             # choose lower width for performance
-            frame = resize(frame, width=740)
+            frame = resize(frame, width=730)
             # increase brightness and contrast for a bit
             frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
 
@@ -263,6 +255,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                         counts[name] = counts.get(name, 0) + 1
                     name = max(counts, key=counts.get)
                     
+                    # split id and name
                     splitName = name.split(' ', 1)
                     # set name to tuple (id, user)
                     name = (splitName[0], splitName[1])
@@ -270,9 +263,9 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
 
             # This is used just to show who is locked in on video feedback
             if runMode == 1 and userLocked == True:
-                # WhoIsLocked[1] is name/Unknown
-                timeLeft = round(timeOfLock+6 - thisFrameTime,1)
+                timeLeft = round(timeOfLock+lockInTime - thisFrameTime,1)
                 if timeLeft>0: # Countdown goes on if action ran
+                    # WhoIsLocked[1] is name/Unknown
                     cv2.putText(frame, f'{whoIsLocked[1]} ({timeLeft}s)', (38, 38), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
 
             if len(names) > 0:
@@ -307,7 +300,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                     display.lcd_display_string("Choose input", 1)
                     display.lcd_display_string(currentPerson[1], 2)
                     whoIsLocked = currentPerson
-                elif timeOfLock+6 < thisFrameTime:
+                elif timeOfLock+lockInTime < thisFrameTime:
                     userLocked = False
                     display.lcd_clear()
                     whoIsLocked = None
