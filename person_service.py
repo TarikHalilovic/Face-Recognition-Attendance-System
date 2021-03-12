@@ -15,9 +15,16 @@ def edit_person(fullName, cameraId, scale_factor, minSizeTuple, minNeighbour):
     if choice == '1':
         newFirstName = input('First name -> ')
         newLastName = input('Last name -> ')
+        newId = input('New id (if adding user that\'s already in the database on server, otherwise leave empty) -> ')
         current_id = fullName.split(' ', 1)
         print('[INFO] Renaming directory.')
-        os.rename(f'./dataset/{fullName}', f'./dataset/{current_id[0]} {newFirstName} {newLastName}')
+        if newId == "":
+            os.rename(f'./dataset/{fullName}', f'./dataset/{current_id[0]} {newFirstName} {newLastName}')
+        else:
+            if not str.isdigit(newId):
+                print('[ERROR] New id was not positive integer. Aborting.')
+                raise Exception('New id was not positive integer.')
+            os.rename(f'./dataset/{fullName}', f'./dataset/{newId} {newFirstName} {newLastName}')
         train()
     elif choice == '2':
         print('[INFO] Deleting all images from directory and directory itself.')
