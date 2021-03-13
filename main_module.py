@@ -78,9 +78,9 @@ while True:
         choice = int(input())
         if choice - 1 >= len(people):
             continue
-        remove_person(people[choice - 1])
+        remove_person(people[choice - 1], scaleFactor, minNeighbour, minSizeTuple)
     elif runWhat == '5':
-        train()
+        train(scaleFactor, minNeighbour, minSizeTuple)
     elif runWhat == '6':
         break
     else:

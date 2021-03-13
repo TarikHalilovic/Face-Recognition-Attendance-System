@@ -3,7 +3,7 @@ from trainer import train
 from api_service import add_person_to_external_system
 
 
-def adding_to_recognizer(cameraId, scale_factor, minSizeTuple, minNeighbour, serverUrl, username, password):
+def adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, serverUrl, username, password):
     print('[INFO] Adding new user.')
     firstName = input('First name -> ')
     lastName = input('Last name -> ')
@@ -18,9 +18,9 @@ def adding_to_recognizer(cameraId, scale_factor, minSizeTuple, minNeighbour, ser
             print('[WARNING] No new additions to the recognition system.')
             return
     success = face_image_taker(f'{user_id} {firstName} {lastName}',
-                               cameraId, scale_factor, minSizeTuple, minNeighbour)
+                               cameraId, scaleFactor, minSizeTuple, minNeighbour)
 
     if not success:
         print('[INFO] No new additions to the recognition system.')
     else:
-        train()
+        train(scaleFactor, minNeighbour, minSizeTuple)

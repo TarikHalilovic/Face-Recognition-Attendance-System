@@ -4,7 +4,6 @@ from time import sleep, time as getCurrentTime
 from api_service import post_action
 from Lcd import lcddriver
 from Model.LastPersonEntry import LastPersonEntry
-from faceSize import getBoxArea
 from faceSize import getBiggestBoxInList
 import face_recognition
 import pickle
