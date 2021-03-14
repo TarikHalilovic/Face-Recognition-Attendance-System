@@ -25,10 +25,8 @@ def train(scaleFactor, minNeighbour, minSizeTuple):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         # detect bounding box coordinates of the face
-        
         # Uncomment to use HOG instead of Viola Jones
-        #boxes = face_recognition.face_locations(rgb,
-        #                                        model="hog")
+        #boxes = face_recognition.face_locations(rgb, model="hog")
         rects = detector.detectMultiScale(gray,
                                           scaleFactor=scaleFactor,
                                           minNeighbors=minNeighbour,

@@ -10,14 +10,8 @@ import pickle
 import cv2
 import RPi.GPIO as GPIO
 
-currentPerson = None
-currentStatus = 0 # 0 = No face; -1 = Unknown; 1 = Known
-currentTime = getCurrentTime()
-userLocked = False
-timeOfLock = None
 whoIsLocked = None
 inActionLock = False
-statusForInLock = 0
 lastPersonEntry = None
 
 
@@ -46,7 +40,9 @@ def buzzer_error(buzzer, dutyCycle):
 def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, serverUrl
                   ,username, password, runMode, showDetailInfo):
     try:
-        global userLocked, timeOfLock, whoIsLocked, inActionLock, statusForInLock, currentStatus, currentPerson
+        global whoIsLocked, inActionLock
+        timeOfLock = None
+        currentPerson = None
         alpha = 1.20 # Contrast control (1.0-3.0)
         beta = 21 # Brightness control (0-100)
 
@@ -59,7 +55,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
 
         bounceTime = 230 # Used when setting up events as bounce prevent time
         buzzerDutyCycle = 0.7
-        lockInTime = 7 # How much time user has to choose action
+        lockInTime = 6.5 # How much time user has to choose action
         
         display = lcddriver.lcd() # My display has 16 characters maximum; 2 lines
 
@@ -88,7 +84,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
 
         def event_callback(button):
             # Setting up globals
-            global whoIsLocked, inActionLock, statusForInLock, lastPersonEntry
+            global whoIsLocked, inActionLock, lastPersonEntry
             
             if inActionLock:
                 print('[INFO] Action prevented, ongoing action.')
@@ -114,7 +110,6 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                     lastPersonEntry.personId == whoIsLocked[0] and
                     lastPersonEntry.eventId == eventId and
                     actionTime < lastPersonEntry.time + 13):
-                # remove print in final version
                 if showDetailInfo:
                     print(f'[INFO] Action prevented. Same person, same action. Minimum time has not passed. Time remaining is {(round(lastPersonEntry.time+13 - actionTime, 1))}s.')
                 return
@@ -125,7 +120,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             # This is new last person
             lastPersonEntry = LastPersonEntry(actionTime, eventId, whoIsLocked[0]) 
 
-            if statusForInLock == -1:
+            if whoIsLocked[0] is None: # id is None which means user is Unknown
                 print('Message -> Person not recognized, please look at camera and try again.')
                 response = post_action(None, eventId, serverUrl, username, password)
                 if response.serverError:
@@ -133,9 +128,8 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                 display.lcd_display_string("Not recognized", 1)
                 display.lcd_display_string("Please try again", 2)
                 buzzer_error(buzzer, buzzerDutyCycle)
-            else: # statusForInLock is 1
+            else: # User is known
                 response = post_action(whoIsLocked[0], eventId, serverUrl, username, password)
-                # remove print in final version
                 if showDetailInfo:
                     print(f'[INFO] User logged with id -> {whoIsLocked[0]}')
                 if not response.serverError:
@@ -178,13 +172,18 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                             display.lcd_display_string("Welcome back", 1)
                             display.lcd_display_string(response.fullName, 2)
                             buzzer_ok(buzzer, buzzerDutyCycle)
+                        elif response.messageCode == 9:
+                            display.lcd_display_string("Not recognized", 1)
+                            display.lcd_display_string("Please try again", 2)
+                            print('[WARNING] Message code 9 appeared.')
+                            buzzer_ok(buzzer, buzzerDutyCycle)
                         else:
                             display.lcd_display_string("Unknown message", 1)
                             display.lcd_display_string("      code",2)
                 else:
                     display.lcd_display_string("  Server error", 1)
                     buzzer_error(buzzer, buzzerDutyCycle)
-            sleep(5) # Shows lcd text and locks actions for time
+            sleep(3.9) # Shows lcd text and locks actions for time
             display.lcd_clear()
             inActionLock = False
 
@@ -229,7 +228,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                                               minSize=minSizeTuple,
                                               flags=cv2.CASCADE_SCALE_IMAGE)
 
-            # box coordinates are in (x, y, w, h) order; change order
+            # prepare coordinates for face_recognition function
             boxes = [(y, x + w, y + h, x) for (x, y, w, h) in rects]
 
             # get biggest box
@@ -237,16 +236,12 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
 
             encodings = face_recognition.face_encodings(rgb, biggestBoxInList)
             names = []
-            currentStatus = 0 # If it doesnt change - means no users/unknowns
             for encoding in encodings:
                 matches = face_recognition.compare_faces(data['encodings'],
                                                          encoding,
                                                          tolerance=tolerance)
                 name = (None, 'Unknown')
-                currentStatus = -1 # If it doesnt change - means we have an unknown
                 if True in matches:
-                    currentStatus = 1 # Means you have a recognized user
-                    
                     matchedIds = [i for (i, b) in enumerate(matches) if b]
                     counts = {}
                     for i in matchedIds:
@@ -260,51 +255,41 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                     name = (splitName[0], splitName[1])
                 names.append(name)
 
-            # This is used just to show who is locked in on video feedback
-            if runMode == 1 and userLocked == True:
-                timeLeft = round(timeOfLock+lockInTime - thisFrameTime,1)
-                if timeLeft > 0: # Countdown goes on if action ran
-                    # WhoIsLocked[1] is name/Unknown
-                    cv2.putText(frame, f'{whoIsLocked[1]} ({timeLeft}s)', (38, 38), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
-
             if len(names) > 0:
                 currentPerson = names[0] # Pick first and only from array
                 
-                if userLocked == False and inActionLock == False:
-                        userLocked = True
-                        timeOfLock = thisFrameTime
+                if whoIsLocked is None and inActionLock == False:
                         display.lcd_clear()
                         display.lcd_display_string("Choose input", 1)
-                        if currentStatus == 1:
-                            statusForInLock = 1
-                            # currentPerson[1] is user's name here
-                            display.lcd_display_string(currentPerson[1], 2)
-                        else:
-                            statusForInLock = -1
-                            # currentPerson[1] is "Unknown" here
-                            display.lcd_display_string(currentPerson[1], 2)   
-                        # Setting variable to tuple (id,user/Unknown)
+                        display.lcd_display_string(currentPerson[1], 2)
+                        timeOfLock = thisFrameTime
+                        # Setting variable to tuple (id/None,user/Unknown)   
                         whoIsLocked = currentPerson
             else:
                 currentPerson = None
 
-            if userLocked == True and inActionLock == False:
+            if whoIsLocked is not None and inActionLock == False:
                 # first check: if initial lock-on was on Unknown but now we have real user, if that happens lock in on real user
-                # second check is to give enough time to choose input
-                if statusForInLock == -1 and currentStatus == 1:
-                    #userLocked stays True
+                # second check is to give user enough time to choose input
+                if (whoIsLocked[0] is None and currentPerson is not None and
+                    currentPerson[0] is not None):
+                    whoIsLocked = None
                     display.lcd_clear()
                     timeOfLock = thisFrameTime # refresh time of lock
-                    statusForInLock = 1
                     display.lcd_display_string("Choose input", 1)
                     display.lcd_display_string(currentPerson[1], 2)
+                    sleep(0.1) # delay a bit to let display fully load characters
                     whoIsLocked = currentPerson
                 elif timeOfLock+lockInTime < thisFrameTime:
-                    userLocked = False
-                    display.lcd_clear()
                     whoIsLocked = None
-                    statusForInLock = 0
-                
+                    display.lcd_clear()
+                    
+            # This is used just to show who is locked in on video feedback
+            if runMode == 1 and whoIsLocked is not None:
+                timeLeft = round(timeOfLock+lockInTime - thisFrameTime,1)
+                if timeLeft > 0: # Countdown goes on if action ran
+                    # WhoIsLocked[1] is name/Unknown
+                    cv2.putText(frame, f'{whoIsLocked[1]} ({timeLeft}s)', (38, 38), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
 
             # This is for drawing on screen and can be disabled if no display
             if runMode == 1:
