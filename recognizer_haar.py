@@ -68,18 +68,16 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
         buzzer = GPIO.PWM(buzzerPin, 1200)
 
         def map_button_to_eventId(button):
-            eventId = None
             if button == buttonStart:
-                eventId = 1
+                return 1
             elif button == buttonBreak:
-                eventId = 2
+                return 2
             elif button == buttonTask:
-                eventId = 3
+                return 3
             elif button == buttonEnd:
-                eventId = 4
+                return 4
             else:
                 raise Exception(f'Button was not mapped to event. Unknown button: {button}')
-            return eventId
 
 
         def event_callback(button):
@@ -175,8 +173,9 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                         elif response.messageCode == 9:
                             display.lcd_display_string("Not recognized", 1)
                             display.lcd_display_string("Please try again", 2)
-                            print('[WARNING] Message code 9 appeared.')
                             buzzer_ok(buzzer, buzzerDutyCycle)
+                            if showDetailInfo:
+                                print('[WARNING] Message code 9 appeared.')
                         else:
                             display.lcd_display_string("Unknown message", 1)
                             display.lcd_display_string("      code",2)
