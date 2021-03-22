@@ -1,6 +1,6 @@
 from imutils.video import VideoStream
 from imutils import resize
-from time import sleep, time as getCurrentTime
+from time import sleep, strftime, time as getCurrentTime, localtime as getLocalTime
 from api_service import post_action
 from Lcd import lcddriver
 from Model.LastPersonEntry import LastPersonEntry
@@ -14,26 +14,32 @@ whoIsLocked = None
 inActionLock = False
 lastPersonEntry = None
 
+def buzzer_quick_alert(buzzer, dutyCycle):
+    buzzer.ChangeFrequency(600)
+    buzzer.start(dutyCycle)
+    sleep(0.15)
+    buzzer.stop()
+
 
 def buzzer_ok(buzzer, dutyCycle):
     buzzer.ChangeFrequency(600)
     buzzer.start(dutyCycle)
-    sleep(0.6)
+    sleep(0.5)
     buzzer.stop()
 
 
 def buzzer_error(buzzer, dutyCycle):
     buzzer.ChangeFrequency(1200)
     buzzer.start(dutyCycle)
-    sleep(0.3)
+    sleep(0.25)
     buzzer.stop()
-    sleep(0.3)
+    sleep(0.25)
     buzzer.start(dutyCycle)
-    sleep(0.3)
+    sleep(0.25)
     buzzer.stop()
-    sleep(0.3)
+    sleep(0.25)
     buzzer.start(dutyCycle)
-    sleep(0.3)
+    sleep(0.25)
     buzzer.stop()
 
 
@@ -77,7 +83,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             elif button == buttonEnd:
                 return 4
             else:
-                raise Exception(f'Button was not mapped to event. Unknown button: {button}')
+                raise Exception(f'Button not mapped to any event. GPIO pin: {button}')
 
 
         def event_callback(button):
@@ -85,10 +91,12 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             global whoIsLocked, inActionLock, lastPersonEntry
             
             if inActionLock:
-                print('[INFO] Action prevented, ongoing action.')
+                buzzer_quick_alert(buzzer, buzzerDutyCycle)
+                print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] Action prevented, ongoing action.')
                 return
             if whoIsLocked is None:
-                print('[INFO] Action prevented, nobody in lock.')
+                buzzer_quick_alert(buzzer, buzzerDutyCycle)
+                print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] Action prevented, nobody in lock.')
                 return
                 
             actionTime = getCurrentTime()
@@ -107,9 +115,9 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             if (lastPersonEntry is not None and
                     lastPersonEntry.personId == whoIsLocked[0] and
                     lastPersonEntry.eventId == eventId and
-                    actionTime < lastPersonEntry.time + 13):
+                    actionTime < lastPersonEntry.time + 20):
                 if showDetailInfo:
-                    print(f'[INFO] Action prevented. Same person, same action. Minimum time has not passed. Time remaining is {(round(lastPersonEntry.time+13 - actionTime, 1))}s.')
+                    print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] Action prevented. Same person, same action. Minimum time has not passed. Time remaining is {(round(lastPersonEntry.time+20 - actionTime, 1))}s.')
                 return
 
             inActionLock = True # Running the command, no interrupts
@@ -119,25 +127,20 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             lastPersonEntry = LastPersonEntry(actionTime, eventId, whoIsLocked[0]) 
 
             if whoIsLocked[0] is None: # id is None which means user is Unknown
-                print('Message -> Person not recognized, please look at camera and try again.')
+                print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] Message -> Person not recognized, please look at camera and try again.')
                 response = post_action(None, eventId, serverUrl, username, password)
                 if response.serverError:
-                    print('[ERROR] Server error.')
+                    print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] [ERROR] Server error.')
                 display.lcd_display_string("Not recognized", 1)
                 display.lcd_display_string("Please try again", 2)
                 buzzer_error(buzzer, buzzerDutyCycle)
             else: # User is known
                 response = post_action(whoIsLocked[0], eventId, serverUrl, username, password)
                 if showDetailInfo:
-                    print(f'[INFO] User logged with id -> {whoIsLocked[0]}')
+                    print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] User logged with id -> {whoIsLocked[0]}')
                 if not response.serverError:
                     if response.message is not None: 
-                        # prepare name before printing on lcd
-                        if (response.fullName is not None and 
-                            len(response.fullName) > 16):
-                            response.fullName = response.fullName[0,16]
-                        
-                        print('Message -> ' + response.message)
+                        print(f'Message -> {response.message}')
                         if response.messageCode == 1:
                             display.lcd_display_string("  Work already", 1)
                             display.lcd_display_string("    started", 2)
@@ -152,23 +155,23 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                             buzzer_error(buzzer, buzzerDutyCycle)
                         elif response.messageCode == 4:
                             display.lcd_display_string("Welcome", 1)
-                            display.lcd_display_string(response.fullName, 2)
+                            display.lcd_display_string(whoIsLocked[1], 2)
                             buzzer_ok(buzzer, buzzerDutyCycle)
                         elif response.messageCode == 5:
                             display.lcd_display_string("Have fun", 1)
-                            display.lcd_display_string(response.fullName, 2)
+                            display.lcd_display_string(whoIsLocked[1], 2)
                             buzzer_ok(buzzer, buzzerDutyCycle)
                         elif response.messageCode == 6:
                             display.lcd_display_string("Stay safe", 1)
-                            display.lcd_display_string(response.fullName, 2)
+                            display.lcd_display_string(whoIsLocked[1], 2)
                             buzzer_ok(buzzer, buzzerDutyCycle)
                         elif response.messageCode == 7:
                             display.lcd_display_string("Goodbye", 1)
-                            display.lcd_display_string(response.fullName, 2)
+                            display.lcd_display_string(whoIsLocked[1], 2)
                             buzzer_ok(buzzer, buzzerDutyCycle)
                         elif response.messageCode == 8:
                             display.lcd_display_string("Welcome back", 1)
-                            display.lcd_display_string(response.fullName, 2)
+                            display.lcd_display_string(whoIsLocked[1], 2)
                             buzzer_ok(buzzer, buzzerDutyCycle)
                         elif response.messageCode == 9:
                             display.lcd_display_string("Not recognized", 1)
@@ -192,7 +195,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
         GPIO.add_event_detect(buttonBreak, GPIO.RISING, callback=lambda x: event_callback(buttonBreak), bouncetime=bounceTime)
         GPIO.add_event_detect(buttonTask, GPIO.RISING, callback=lambda x: event_callback(buttonTask), bouncetime=bounceTime)
 
-        print('[INFO] Loading encodings from file.')
+        print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] Loading encodings from file.')
         try:
             # Using absolute path, take caution
             data = pickle.loads(open('/home/pi/Desktop/face_recognition_for_attendance_rpi/encodings.pickle', 'rb').read())
@@ -201,16 +204,16 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             raise Exception('Error on loading pickle file.')
 
         detector = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        print('[INFO] Starting video stream, press "q" to exit.')
+        print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] Starting video stream, press "q" to exit.')
         vs = VideoStream(src=cameraId).start()
         sleep(1.3) # Warm up
         
         while True:
-            thisFrameTime = getCurrentTime() # using this lowers precision for a bit but its fine
+            thisFrameTime = getCurrentTime()
             
             frame = vs.read()
             # choose lower width for performance
-            frame = resize(frame, width=730)
+            frame = resize(frame, width=700)
             # increase brightness and contrast for a bit
             frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
 
@@ -258,6 +261,10 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                 currentPerson = names[0] # Pick first and only from array
                 
                 if whoIsLocked is None and inActionLock == False:
+                        # perpare name because display has 16 chars max
+                        if (currentPerson[0] is not None and len(currentPerson[1]) > 16):
+                            currentPerson = (currentPerson[0] ,currentPerson[1][0:16])
+                
                         display.lcd_clear()
                         display.lcd_display_string("Choose input", 1)
                         display.lcd_display_string(currentPerson[1], 2)
@@ -312,4 +319,4 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
         buzzer.stop()
         display.lcd_clear()
         GPIO.cleanup()
-        print('[INFO] Recognizer finished.')
+        print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] Recognizer finished.')
