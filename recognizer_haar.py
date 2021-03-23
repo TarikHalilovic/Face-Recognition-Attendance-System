@@ -44,7 +44,7 @@ def buzzer_error(buzzer, dutyCycle):
 
 
 def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, serverUrl
-                  ,username, password, runMode, showDetailInfo):
+                  ,token, runMode, showDetailInfo):
     try:
         global whoIsLocked, inActionLock
         timeOfLock = None
@@ -128,14 +128,14 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
 
             if whoIsLocked[0] is None: # id is None which means user is Unknown
                 print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] Message -> Person not recognized, please look at camera and try again.')
-                response = post_action(None, eventId, serverUrl, username, password)
+                response = post_action(None, eventId, serverUrl, token)
                 if response.serverError:
                     print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] [ERROR] Server error.')
                 display.lcd_display_string("Not recognized", 1)
                 display.lcd_display_string("Please try again", 2)
                 buzzer_error(buzzer, buzzerDutyCycle)
             else: # User is known
-                response = post_action(whoIsLocked[0], eventId, serverUrl, username, password)
+                response = post_action(whoIsLocked[0], eventId, serverUrl, token)
                 if showDetailInfo:
                     print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] User logged with id -> {whoIsLocked[0]}')
                 if not response.serverError:

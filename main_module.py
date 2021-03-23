@@ -6,7 +6,7 @@
 from add_to_recognizer import adding_to_recognizer
 from person_service import edit_person, getPeople, remove_person, list_people
 from trainer import train
-from api_service import server_connection_test
+from api_service import get_token
 import recognizer_haar as recognizer
 import argparse
 import configparser
@@ -35,8 +35,8 @@ serverUrl = Config.get('Server', 'ServerUrl')
             
 print('[INFO] Attendance system running.')
 
-# Check if you can reach server
-server_connection_test(serverUrl, username, password)
+# Get jwt
+token = get_token(serverUrl, username, password)
 
 # Additional config
 runMode = 1 # 1 - Shows video feedback on desktop, 0 - Does not show
@@ -60,7 +60,7 @@ while True:
     if args["run"] is None:
         runWhat = input()
     if runWhat == '2':
-        adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, serverUrl, username, password)
+        adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, serverUrl, token)
     elif runWhat == '3':
         people = getPeople()
         print('Please choose user to edit.')
@@ -84,6 +84,5 @@ while True:
     elif runWhat == '6':
         break
     else:
-        recognizer.run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, serverUrl, username,
-                                 password, runMode, showDetailInfo)
+        recognizer.run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, serverUrl, token, runMode, showDetailInfo)
 print('[INFO] Attendance system stopping.')

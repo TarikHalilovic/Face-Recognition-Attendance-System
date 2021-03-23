@@ -3,7 +3,7 @@ from trainer import train
 from api_service import add_person_to_external_system
 
 
-def adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, serverUrl, username, password):
+def adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, serverUrl,token):
     print('[INFO] Adding new user.')
     firstName = input('First name -> ')
     lastName = input('Last name -> ')
@@ -13,7 +13,7 @@ def adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, serv
         user_id = existingId
     else:
         try:
-            user_id = add_person_to_external_system(firstName, lastName, serverUrl, username, password)
+            user_id = add_person_to_external_system(firstName, lastName, serverUrl, token)
         except Exception:
             print('[WARNING] No new additions to the recognition system.')
             return
