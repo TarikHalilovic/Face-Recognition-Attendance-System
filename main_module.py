@@ -6,7 +6,7 @@
 from add_to_recognizer import adding_to_recognizer
 from person_service import edit_person, getPeople, remove_person, list_people
 from trainer import train
-from api_service import get_token
+from ApiService import ApiService
 import recognizer_haar as recognizer
 import argparse
 import configparser
@@ -15,7 +15,7 @@ import configparser
 ap = argparse.ArgumentParser()
 ap.add_argument("-r", "--run", required=False, help="Add '-r 1' to run in recognition mode")
 ap.add_argument("-m", "--mode", required=False, help="Add '-m 0' to run with no camera feed output") # To save resources
-ap.add_argument("-i", "--info", required=False, help="Add '-i 0' to run with no detailed INFO messages") # More INFO while running
+ap.add_argument("-i", "--info", required=False, help="Add '-i 1' to run with detailed INFO messages") # More INFO while running
 args = vars(ap.parse_args())
 
 print('[INFO] Loading configuration.')
@@ -31,23 +31,23 @@ tolerance = float(Config.get('RecognitionConfig', 'Tolerance'))
 minNeighbour = int(Config.get('RecognitionConfig', 'MinNeighbour'))
 username = Config.get('Server', 'Username')
 password = Config.get('Server', 'Password') 
-serverUrl = Config.get('Server', 'ServerUrl')
+server = Config.get('Server', 'ServerAddr')
             
 print('[INFO] Attendance system running.')
 
-# Get jwt
-token = get_token(serverUrl, username, password)
+# Load up ApiService and get jwt
+apiService = ApiService(server, username, password)
 
 # Additional config
 runMode = 1 # 1 - Shows video feedback on desktop, 0 - Does not show
-showDetailInfo = True
+showDetailInfo = False
 runWhat = None
 if args["run"] is not None:
     runWhat = args["run"]
 if args["mode"] is not None:
     runMode = int(args["mode"])
-if args["info"] is not None and args["info"] == 0:
-    showDetailInfo = False
+if args["info"] is not None and args["info"] == 1:
+    showDetailInfo = True
     
 while True:
     print('Please choose: ')
@@ -60,7 +60,7 @@ while True:
     if args["run"] is None:
         runWhat = input()
     if runWhat == '2':
-        adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, serverUrl, token)
+        adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, apiService)
     elif runWhat == '3':
         people = getPeople()
         print('Please choose user to edit.')
@@ -84,5 +84,5 @@ while True:
     elif runWhat == '6':
         break
     else:
-        recognizer.run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, serverUrl, token, runMode, showDetailInfo)
+        recognizer.run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, apiService, runMode, showDetailInfo)
 print('[INFO] Attendance system stopping.')

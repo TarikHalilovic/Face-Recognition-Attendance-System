@@ -1,7 +1,6 @@
 from imutils.video import VideoStream
 from imutils import resize
 from time import sleep, strftime, time as getCurrentTime, localtime as getLocalTime
-from api_service import post_action
 from Lcd import lcddriver
 from Model.LastPersonEntry import LastPersonEntry
 from faceSize import getBiggestBoxInList
@@ -43,8 +42,7 @@ def buzzer_error(buzzer, dutyCycle):
     buzzer.stop()
 
 
-def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, serverUrl
-                  ,token, runMode, showDetailInfo):
+def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, apiService, runMode, showDetailInfo):
     try:
         global whoIsLocked, inActionLock
         timeOfLock = None
@@ -128,16 +126,16 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
 
             if whoIsLocked[0] is None: # id is None which means user is Unknown
                 print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] Message -> Person not recognized, please look at camera and try again.')
-                response = post_action(None, eventId, serverUrl, token)
+                response = apiService.post_action(None, eventId)
                 if response.serverError:
                     print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] [ERROR] Server error.')
                 display.lcd_display_string("Not recognized", 1)
                 display.lcd_display_string("Please try again", 2)
                 buzzer_error(buzzer, buzzerDutyCycle)
             else: # User is known
-                response = post_action(whoIsLocked[0], eventId, serverUrl, token)
+                response = apiService.post_action(whoIsLocked[0], eventId)
                 if showDetailInfo:
-                    print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] User logged with id -> {whoIsLocked[0]}')
+                    print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] User  id is -> {whoIsLocked[0]}')
                 if not response.serverError:
                     if response.message is not None: 
                         print(f'Message -> {response.message}')

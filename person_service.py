@@ -37,8 +37,10 @@ def edit_person(fullName, cameraId, scaleFactor, minSizeTuple, minNeighbour):
     else:
         print('[INFO] Editing canceled.')
 
+
 def getPeople():
     return [f.name for f in os.scandir('./dataset') if f.is_dir()]
+
 
 def remove_person(fullName, scaleFactor, minNeighbour, minSizeTuple):
     print('[INFO] Removing all images for person and deleting directory.')
@@ -46,7 +48,10 @@ def remove_person(fullName, scaleFactor, minNeighbour, minSizeTuple):
     os.rmdir(f'./dataset/{fullName}')
     train(scaleFactor, minNeighbour, minSizeTuple)
     
+    
 def list_people(people):
     for p in people:
         print(f'{(people.index(p) + 1)}.) {(p.split(" ", 1)[1])}')
+        
+        
     
