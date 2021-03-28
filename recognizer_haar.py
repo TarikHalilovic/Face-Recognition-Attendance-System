@@ -138,7 +138,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                     print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] User  id is -> {whoIsLocked[0]}')
                 if not response.serverError:
                     if response.message is not None: 
-                        print(f'Message -> {response.message}')
+                        print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] Message -> {response.message}')
                         if response.messageCode == 1:
                             display.lcd_display_string("  Work already", 1)
                             display.lcd_display_string("    started", 2)
