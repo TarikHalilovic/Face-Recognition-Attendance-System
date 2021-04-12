@@ -148,8 +148,8 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                             display.lcd_display_string("    started", 2)
                             buzzer_error(buzzer, buzzerDutyCycle)
                         elif response.messageCode == 3:
-                            display.lcd_display_string("  Actions not", 1)
-                            display.lcd_display_string("    finished", 2)
+                            display.lcd_display_string("   Break not", 1)
+                            display.lcd_display_string("     closed", 2)
                             buzzer_error(buzzer, buzzerDutyCycle)
                         elif response.messageCode == 4:
                             display.lcd_display_string("Welcome", 1)
@@ -172,9 +172,13 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                             display.lcd_display_string(whoIsLocked[1], 2)
                             buzzer_ok(buzzer, buzzerDutyCycle)
                         elif response.messageCode == 9:
+                            display.lcd_display_string("  Official AB.", 1)
+                            display.lcd_display_string("   not closed", 2)
+                            buzzer_error(buzzer, buzzerDutyCycle)
+                        elif response.messageCode == 10:
                             display.lcd_display_string("Not recognized", 1)
                             display.lcd_display_string("Please try again", 2)
-                            buzzer_ok(buzzer, buzzerDutyCycle)
+                            buzzer_error(buzzer, buzzerDutyCycle)
                             if showDetailInfo:
                                 print('[WARNING] Message code 9 appeared.')
                         else:
