@@ -5,11 +5,11 @@
 
 from add_to_recognizer import adding_to_recognizer
 from person_service import edit_person, getPeople, remove_person, list_people
-from trainer import train
+from Trainer import Trainer
 from ApiService import ApiService
 import recognizer_haar as recognizer
 import argparse
-import configparser
+import configparser # train
 
 # Preparing arguments
 ap = argparse.ArgumentParser()
@@ -38,6 +38,9 @@ print('[INFO] Attendance system running.')
 # Load up ApiService and get jwt
 apiService = ApiService(server, username, password)
 
+# Prepare Trainer so its available
+trainer = Trainer(scaleFactor, minNeighbour, minSizeTuple, apiService)
+
 # Additional config
 runMode = 1 # 1 - Shows video feedback on desktop, 0 - Does not show
 showDetailInfo = False
@@ -56,11 +59,12 @@ while True:
     print('3.) Edit user')
     print('4.) Remove user')
     print('5.) Retrain model')
-    print('6.) Exit')
+    print('6.) Batch add users')
+    print('7.) Exit')
     if args["run"] is None:
         runWhat = input()
     if runWhat == '2':
-        adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, apiService)
+        adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, apiService, trainer)
     elif runWhat == '3':
         people = getPeople()
         print('Please choose user to edit.')
@@ -69,7 +73,7 @@ while True:
         choice = int(input())
         if choice - 1 >= len(people):
             continue
-        edit_person(people[choice - 1], cameraId, scaleFactor, minSizeTuple, minNeighbour)
+        edit_person(people[choice - 1], cameraId, trainer)
     elif runWhat == '4':
         people = getPeople()
         print('Please choose user to remove.')
@@ -78,10 +82,12 @@ while True:
         choice = int(input())
         if choice - 1 >= len(people):
             continue
-        remove_person(people[choice - 1], scaleFactor, minNeighbour, minSizeTuple)
+        remove_person(people[choice - 1], trainer)
     elif runWhat == '5':
-        train(scaleFactor, minNeighbour, minSizeTuple)
-    elif runWhat == '6':
+        trainer.train()
+    elif runWhat == '5':
+        trainer.batch_add_to_system()
+    elif runWhat == '7':
         break
     else:
         recognizer.run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, apiService, runMode, showDetailInfo)

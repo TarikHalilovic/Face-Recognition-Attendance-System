@@ -1,8 +1,7 @@
 from take_image_with_face import face_image_taker
-from trainer import train
 
 
-def adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, apiService):
+def adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, apiService, trainer):
     print('[INFO] Adding new user.')
     firstName = input('First name -> ')
     lastName = input('Last name -> ')
@@ -22,4 +21,4 @@ def adding_to_recognizer(cameraId, scaleFactor, minSizeTuple, minNeighbour, apiS
     if not success:
         print('[INFO] No new additions to the recognition system.')
     else:
-        train(scaleFactor, minNeighbour, minSizeTuple)
+        trainer.train()

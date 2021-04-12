@@ -4,7 +4,7 @@ from take_image_with_face import delete_from_folder
 from take_image_with_face import face_image_taker
 
 
-def edit_person(fullName, cameraId, scaleFactor, minSizeTuple, minNeighbour):
+def edit_person(fullName, cameraId, trainer):
     print(f'[INFO] Editing -> {fullName}')
     print('Please choose: ')
     print('1.) Rename')  # change folder name, retrain
@@ -25,7 +25,7 @@ def edit_person(fullName, cameraId, scaleFactor, minSizeTuple, minNeighbour):
                 print('[ERROR] New id was not positive integer. Aborting.')
                 raise Exception('New id was not positive integer.')
             os.rename(f'./dataset/{fullName}', f'./dataset/{newId} {newFirstName} {newLastName}')
-        train(scaleFactor, minNeighbour, minSizeTuple)
+        trainer.train(scaleFactor, minNeighbour, minSizeTuple)
     elif choice == '2':
         print('[INFO] Deleting all images from directory and directory itself.')
         delete_from_folder(f'./dataset/{fullName}')
@@ -33,7 +33,7 @@ def edit_person(fullName, cameraId, scaleFactor, minSizeTuple, minNeighbour):
         success = face_image_taker(fullName, cameraId, scale_factor, minSizeTuple, minNeighbour)
         if not success:
             print('[INFO] Removing person from recognition model.')
-        train(scaleFactor, minNeighbour, minSizeTuple)
+        trainer.train(scaleFactor, minNeighbour, minSizeTuple)
     else:
         print('[INFO] Editing canceled.')
 
@@ -42,11 +42,11 @@ def getPeople():
     return [f.name for f in os.scandir('./dataset') if f.is_dir()]
 
 
-def remove_person(fullName, scaleFactor, minNeighbour, minSizeTuple):
+def remove_person(fullName, trainer):
     print('[INFO] Removing all images for person and deleting directory.')
     delete_from_folder(f'./dataset/{fullName}')
     os.rmdir(f'./dataset/{fullName}')
-    train(scaleFactor, minNeighbour, minSizeTuple)
+    trainer.train(scaleFactor, minNeighbour, minSizeTuple)
     
     
 def list_people(people):
