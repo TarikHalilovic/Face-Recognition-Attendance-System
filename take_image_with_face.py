@@ -18,9 +18,10 @@ def delete_from_folder(dir_name):
 
 def face_image_taker(name, cameraId, scale_factor, minSizeTuple, minNeighbour):
     dirName = f'./dataset/{name}'
+    splitName = name.split(' ', 2)
     if not os.path.exists(dirName):
         os.makedirs(dirName)
-        print(f'[INFO] Directory for {name}\'s images created.')
+        print(f'[INFO] Directory for {splitName[1]}\'s images created.')
     else:
         print('[ERROR] Name already exists.')
         return False

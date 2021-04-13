@@ -85,7 +85,7 @@ while True:
         remove_person(people[choice - 1], trainer)
     elif runWhat == '5':
         trainer.train()
-    elif runWhat == '5':
+    elif runWhat == '6':
         trainer.batch_add_to_system()
     elif runWhat == '7':
         break
