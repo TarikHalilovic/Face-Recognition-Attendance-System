@@ -43,6 +43,42 @@ class ApiService:
             print(f'[ERROR] Error message -> {err}') 
         finally:
             return ar
+            
+    
+    async def post_action_async(self, userId, buttonId):
+        ar = ActionResponse(True, False, 0, None, None, None)
+        try:
+            response = requests.post(
+                url=f'{self.server}/api/attendance/insert',
+                json={'personnelId': userId, 'buttonId': buttonId},
+                headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': self.tokenWithBearer
+                },
+                timeout=3.5
+            )
+            # serverError, isSuccessful, statusCode, message, fullName, errorCode
+            # ActionResponse(True, False, response.status_code, None, None, None)
+            ar.statusCode = response.status_code
+            if response.status_code != 200:
+                if response.status_code == 403:
+                    if self.try_to_refresh_creds():
+                        ar = self.post_action(userId, buttonId)
+                else:
+                    print(f'[ERROR] Server error. Status code -> {response.status_code}')
+            else:
+                data = response.json()
+                ar.serverError = False
+                ar.isSuccessful = data["isSuccessful"]
+                ar.message = data["message"]
+                ar.fullName = data["fullName"]
+                ar.messageCode = data["messageCode"]
+        except requests.exceptions.Timeout:
+            print('[ERROR] Api request timed out.')
+        except Exception as err:
+            print(f'[ERROR] Error message -> {err}') 
+        finally:
+            return ar
 
 
     def add_person_to_external_system(self, firstName, lastName):

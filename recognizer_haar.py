@@ -4,10 +4,12 @@ from time import sleep, strftime, time as getCurrentTime, localtime as getLocalT
 from Lcd import lcddriver
 from Model.LastPersonEntry import LastPersonEntry
 from faceSize import getBiggestBoxInList
+from AttendanceActionService import AttendanceActionService
 import face_recognition
 import pickle
 import cv2
 import RPi.GPIO as GPIO
+import asyncio
 
 whoIsLocked = None
 inActionLock = False
@@ -45,6 +47,9 @@ def buzzer_error(buzzer, dutyCycle):
 def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, apiService, runMode, showDetailInfo):
     try:
         global whoIsLocked, inActionLock
+        
+        local_db_service = AttendanceActionService()
+        
         timeOfLock = None
         currentPerson = None
         alpha = 1.20 # Contrast control (1.0-3.0)
@@ -84,7 +89,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                 raise Exception(f'Button not mapped to any event. GPIO pin: {button}')
 
 
-        def event_callback(button):
+        async def event_callback(button):
             # Setting up globals
             global whoIsLocked, inActionLock, lastPersonEntry
             
@@ -124,78 +129,87 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             # This is new last person
             lastPersonEntry = LastPersonEntry(actionTime, eventId, whoIsLocked[0]) 
 
+            task_response_external = None
             if whoIsLocked[0] is None: # id is None which means user is Unknown
                 print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] Message -> Person not recognized, please look at camera and try again.')
-                response = apiService.post_action(None, eventId)
-                if response.serverError:
-                    print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] [ERROR] Server error.')
+                task_response_external = asyncio.create_task(apiService.post_action_async((None, eventId))
+                response = local_db_service.insert_action(whoIsLocked[0], eventId)
+                #if response.serverError:
+                #    print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] [ERROR] Server error.')
                 display.lcd_display_string("Not recognized", 1)
                 display.lcd_display_string("Please try again", 2)
                 buzzer_error(buzzer, buzzerDutyCycle)
             else: # User is known
-                response = apiService.post_action(whoIsLocked[0], eventId)
+                task_response_external = asyncio.create_task(apiService.post_action_async(whoIsLocked[0], eventId))
+                response = local_db_service.insert_action(whoIsLocked[0], eventId, hoIsLocked[1])
                 if showDetailInfo:
                     print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] User  id is -> {whoIsLocked[0]}')
-                if not response.serverError:
-                    if response.message is not None: 
-                        print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] Message -> {response.message}')
-                        if response.messageCode == 1:
-                            display.lcd_display_string("  Work already", 1)
-                            display.lcd_display_string("    started", 2)
-                            buzzer_error(buzzer, buzzerDutyCycle)
-                        elif response.messageCode == 2:
-                            display.lcd_display_string("    Work not", 1)
-                            display.lcd_display_string("    started", 2)
-                            buzzer_error(buzzer, buzzerDutyCycle)
-                        elif response.messageCode == 3:
-                            display.lcd_display_string("   Break not", 1)
-                            display.lcd_display_string("     closed", 2)
-                            buzzer_error(buzzer, buzzerDutyCycle)
-                        elif response.messageCode == 4:
-                            display.lcd_display_string("Welcome", 1)
-                            display.lcd_display_string(whoIsLocked[1], 2)
-                            buzzer_ok(buzzer, buzzerDutyCycle)
-                        elif response.messageCode == 5:
-                            display.lcd_display_string("Have fun", 1)
-                            display.lcd_display_string(whoIsLocked[1], 2)
-                            buzzer_ok(buzzer, buzzerDutyCycle)
-                        elif response.messageCode == 6:
-                            display.lcd_display_string("Stay safe", 1)
-                            display.lcd_display_string(whoIsLocked[1], 2)
-                            buzzer_ok(buzzer, buzzerDutyCycle)
-                        elif response.messageCode == 7:
-                            display.lcd_display_string("Goodbye", 1)
-                            display.lcd_display_string(whoIsLocked[1], 2)
-                            buzzer_ok(buzzer, buzzerDutyCycle)
-                        elif response.messageCode == 8:
-                            display.lcd_display_string("Welcome back", 1)
-                            display.lcd_display_string(whoIsLocked[1], 2)
-                            buzzer_ok(buzzer, buzzerDutyCycle)
-                        elif response.messageCode == 9:
-                            display.lcd_display_string("  Official AB.", 1)
-                            display.lcd_display_string("   not closed", 2)
-                            buzzer_error(buzzer, buzzerDutyCycle)
-                        elif response.messageCode == 10:
-                            display.lcd_display_string("Not recognized", 1)
-                            display.lcd_display_string("Please try again", 2)
-                            buzzer_error(buzzer, buzzerDutyCycle)
-                            if showDetailInfo:
-                                print('[WARNING] Message code 9 appeared.')
-                        else:
-                            display.lcd_display_string("Unknown message", 1)
-                            display.lcd_display_string("      code",2)
-                else:
-                    display.lcd_display_string("  Server error", 1)
+                #if not response.serverError:
+                #if response.message is not None: 
+                print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] Message -> {response.message}')
+                if response.messageCode == 1:
+                    display.lcd_display_string(" Shift already", 1)
+                    display.lcd_display_string("    started", 2)
                     buzzer_error(buzzer, buzzerDutyCycle)
+                elif response.messageCode == 2:
+                    display.lcd_display_string("   Shift not", 1)
+                    display.lcd_display_string("    started", 2)
+                    buzzer_error(buzzer, buzzerDutyCycle)
+                elif response.messageCode == 3:
+                    display.lcd_display_string("   Break not", 1)
+                    display.lcd_display_string("     closed", 2)
+                    buzzer_error(buzzer, buzzerDutyCycle)
+                elif response.messageCode == 4:
+                    display.lcd_display_string("Welcome", 1)
+                    display.lcd_display_string(whoIsLocked[1], 2)
+                    buzzer_ok(buzzer, buzzerDutyCycle)
+                elif response.messageCode == 5:
+                    display.lcd_display_string("Have fun", 1)
+                    display.lcd_display_string(whoIsLocked[1], 2)
+                    buzzer_ok(buzzer, buzzerDutyCycle)
+                elif response.messageCode == 6:
+                    display.lcd_display_string("Stay safe", 1)
+                    display.lcd_display_string(whoIsLocked[1], 2)
+                    buzzer_ok(buzzer, buzzerDutyCycle)
+                elif response.messageCode == 7:
+                    display.lcd_display_string("Goodbye", 1)
+                    display.lcd_display_string(whoIsLocked[1], 2)
+                    buzzer_ok(buzzer, buzzerDutyCycle)
+                elif response.messageCode == 8:
+                    display.lcd_display_string("Welcome back", 1)
+                    display.lcd_display_string(whoIsLocked[1], 2)
+                    buzzer_ok(buzzer, buzzerDutyCycle)
+                elif response.messageCode == 9:
+                    display.lcd_display_string("  Official AB.", 1)
+                    display.lcd_display_string("   not closed", 2)
+                    buzzer_error(buzzer, buzzerDutyCycle)
+                elif response.messageCode == 10:
+                    display.lcd_display_string("Not recognized", 1)
+                    display.lcd_display_string("Please try again", 2)
+                    buzzer_error(buzzer, buzzerDutyCycle)
+                    if showDetailInfo:
+                        print('[WARNING] Message code 9 appeared.')
+                else:
+                    display.lcd_display_string("Unknown message", 1)
+                    display.lcd_display_string("      code",2)
+                #else:
+                #    display.lcd_display_string("  Server error", 1)
+                #    buzzer_error(buzzer, buzzerDutyCycle)
             sleep(3.9) # Shows lcd text and locks actions for time
             display.lcd_clear()
+            if (await task_response_external).serverError:
+                print('[ERROR] Server Error')
             inActionLock = False
 
 
-        GPIO.add_event_detect(buttonStart, GPIO.RISING, callback=lambda x: event_callback(buttonStart), bouncetime=bounceTime)
-        GPIO.add_event_detect(buttonEnd, GPIO.RISING, callback=lambda x: event_callback(buttonEnd), bouncetime=bounceTime)
-        GPIO.add_event_detect(buttonBreak, GPIO.RISING, callback=lambda x: event_callback(buttonBreak), bouncetime=bounceTime)
-        GPIO.add_event_detect(buttonTask, GPIO.RISING, callback=lambda x: event_callback(buttonTask), bouncetime=bounceTime)
+        def event_caller(button):
+            asyncio.run(event_callback(button))
+            
+
+        GPIO.add_event_detect(buttonStart, GPIO.RISING, callback=lambda x: event_caller(buttonStart), bouncetime=bounceTime)
+        GPIO.add_event_detect(buttonEnd, GPIO.RISING, callback=lambda x: event_caller(buttonEnd), bouncetime=bounceTime)
+        GPIO.add_event_detect(buttonBreak, GPIO.RISING, callback=lambda x: event_caller(buttonBreak), bouncetime=bounceTime)
+        GPIO.add_event_detect(buttonTask, GPIO.RISING, callback=lambda x: event_caller(buttonTask), bouncetime=bounceTime)
 
         print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] Loading encodings from file.')
         try:
