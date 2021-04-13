@@ -4,3 +4,5 @@
 /.idea
 /howTo.txt
 /config.ini
+/local.db
+/Model/__pycache__
