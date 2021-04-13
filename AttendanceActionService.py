@@ -131,3 +131,6 @@ class AttendanceActionService:
                         last_entries
                         last_entries = self.db.get_last_n_actions(8, personnel_id, startIndex)
         return response
+    
+    def delete_last_action(self):
+        self.db.delete_last_action()

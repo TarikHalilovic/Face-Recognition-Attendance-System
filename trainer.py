@@ -63,8 +63,9 @@ class Trainer:
         print('[INFO] Running batch add.')
         print('Please make folder called "batch_dataset" with subfolders name <firstName lastName> which containt images with one face per image of your users. Folder "batch_dataset" should be located in same directory with main_module.py.')
         print('[WARNING] If you don\'t have this folder, exit the script and restart it after you make preparations.')
+        print('[WARNING] Script assumes you don\'t have same users in dataset already.')
         print('Continue? (y/N) -> ')
-        if input() != 'y' return
+        if input() != 'y': return
         
         detector = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         imagePaths = list(paths.list_images("batch_dataset"))
@@ -73,6 +74,8 @@ class Trainer:
         option = input('-> ')
         
         no_image_alerts = []
+        
+        seenNumberOfImgs = 0
         
         for (i, imagePath) in enumerate(imagePaths):
             print(f'[INFO] processing image {(i+1)}/{(len(imagePaths))}')
@@ -90,30 +93,37 @@ class Trainer:
             boxes = [(y, x + w, y + h, x) for (x, y, w, h) in rects]
             biggestBoxInList = getBiggestBoxInList(boxes)
             
-            if option == 2:
+            if int(option) == 2:
                 if len(biggestBoxInList) == 0:
                     no_image_alerts.append(f'[ERROR] No face found on image with path: {imagePath}.')
             else:
+                if seenNumberOfImgs == 5:
+                    cv2.waitKey()
+                    seenNumberOfImgs = 0
+                    cv2.destroyAllWindows()
                 for (x, y, w, h) in rects:
                     cv2.rectangle(image, (x, y), (x+w, y+h), (255, 0, 0), 2)
-                cv2.imshow(imgPath, image)
-        if option == 2:
+                cv2.imshow(imagePath, image)
+                seenNumberOfImgs+=1
+        if int(option) == 2:
             if len(no_image_alerts)>0:
                 for alert in no_image_alerts:
                     print(alert)
                 print('[INFO] Aborting script. Please fix errors above then rerun.')
                 return
-        else
-            if input('If all images contained exactly one face press "y" to continue.') != 'y' return
+        else:
+            cv2.waitKey()
+            cv2.destroyAllWindows()
+            if input('If all images contained exactly one face press y/N to continue.') != 'y': return
         # now add new users and get id, then copy images
         users = []
         ids = []
         for (i, imagePath) in enumerate(imagePaths):
             name = imagePath.split(os.path.sep)[-2]
             imgName = imagePath.split(os.path.sep)[-1]
-            if not users.contain(name):
+            if not name in users:
                 splitName = name.split(' ', 2)
-                id = apiService.add_person_to_external_system(splitName[0], splitName[1])
+                id = self.apiService.add_person_to_external_system(splitName[0], splitName[1])
                 if id == 0:
                     print('[ERROR] Failed to add user to external system.')
                     raise Exception('Failed to add user to external system.')
@@ -124,7 +134,7 @@ class Trainer:
                 self._create_dir(dir_path)
                 self._copy_file(imagePath, f'{dir_path}/{imgName}')
             else:
-                dir_path = f'dataset/{ids[names.index(name)]} {name}'
+                dir_path = f'dataset/{ids[users.index(name)]} {name}'
                 self._copy_file(imagePath, f'{dir_path}/{imgName}')
         # finish with train
         self.train()

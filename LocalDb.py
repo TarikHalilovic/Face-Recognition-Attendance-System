@@ -2,7 +2,7 @@ import sqlite3 as sq
 
 class LocalDb:
     def __init__(self):
-        self.conn = sq.connect('local.db')
+        self.conn = sq.connect('local.db', check_same_thread=False)
         self.c = self.conn.cursor()
         self._initialize_db()
     
@@ -36,6 +36,6 @@ class LocalDb:
         self.c.execute('''SELECT * FROM action WHERE personnel_id = ? ORDER BY date_time DESC LIMIT ? OFFSET ?''', (personnel_id, n, offset))
         return self.c.fetchall()
         
-    #def get_everything(self):
-    #    self.c.execute('''SELECT * FROM action ORDER BY date_time DESC''')
-    #    return self.c.fetchall()
+    def delete_last_action(self):
+        self.c.execute('''DELETE FROM action WHERE id = (SELECT MAX(id) FROM action)''')
+        self.conn.commit()

@@ -9,12 +9,12 @@ from Trainer import Trainer
 from ApiService import ApiService
 import recognizer_haar as recognizer
 import argparse
-import configparser # train
+import configparser
 
 # Preparing arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-r", "--run", required=False, help="Add '-r 1' to run in recognition mode")
-ap.add_argument("-m", "--mode", required=False, help="Add '-m 0' to run with no camera feed output") # To save resources
+ap.add_argument("-m", "--mode", required=False, help="Add '-m 0' to run with no camera feed output") # To save resources if camera output is not needed
 ap.add_argument("-i", "--info", required=False, help="Add '-i 1' to run with detailed INFO messages") # More INFO while running
 args = vars(ap.parse_args())
 
@@ -85,7 +85,7 @@ while True:
         remove_person(people[choice - 1], trainer)
     elif runWhat == '5':
         trainer.train()
-    elif runWhat == '5':
+    elif runWhat == '6':
         trainer.batch_add_to_system()
     elif runWhat == '7':
         break

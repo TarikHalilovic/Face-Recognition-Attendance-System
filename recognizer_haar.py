@@ -5,11 +5,12 @@ from Lcd import lcddriver
 from Model.LastPersonEntry import LastPersonEntry
 from faceSize import getBiggestBoxInList
 from AttendanceActionService import AttendanceActionService
+from threading import Thread
+from queue import Queue
 import face_recognition
 import pickle
 import cv2
 import RPi.GPIO as GPIO
-import asyncio
 
 whoIsLocked = None
 inActionLock = False
@@ -89,13 +90,14 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                 raise Exception(f'Button not mapped to any event. GPIO pin: {button}')
 
 
-        async def event_callback(button):
+        def event_callback(button):
             # Setting up globals
             global whoIsLocked, inActionLock, lastPersonEntry
             
             if inActionLock:
-                buzzer_quick_alert(buzzer, buzzerDutyCycle)
-                print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] Action prevented, ongoing action.')
+                if showDetailInfo:
+                    buzzer_quick_alert(buzzer, buzzerDutyCycle)
+                    print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] Action prevented, ongoing action.')
                 return
             if whoIsLocked is None:
                 buzzer_quick_alert(buzzer, buzzerDutyCycle)
@@ -124,28 +126,30 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                 return
 
             inActionLock = True # Running the command, no interrupts
-            display.lcd_clear()
+            display.lcd_clear() # <- to be safe but takes few miliseconds
 
             # This is new last person
             lastPersonEntry = LastPersonEntry(actionTime, eventId, whoIsLocked[0]) 
 
-            task_response_external = None
+            aThread = None
+            que = Queue()
             if whoIsLocked[0] is None: # id is None which means user is Unknown
                 print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] Message -> Person not recognized, please look at camera and try again.')
-                task_response_external = asyncio.create_task(apiService.post_action_async((None, eventId))
+                
+                aThread = Thread(target=lambda x, arg1, arg2: x.put(apiService.post_action(arg1, arg2)), args=(que, None, eventId))
+                aThread.start()
+                
                 response = local_db_service.insert_action(whoIsLocked[0], eventId)
-                #if response.serverError:
-                #    print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] [ERROR] Server error.')
                 display.lcd_display_string("Not recognized", 1)
                 display.lcd_display_string("Please try again", 2)
                 buzzer_error(buzzer, buzzerDutyCycle)
             else: # User is known
-                task_response_external = asyncio.create_task(apiService.post_action_async(whoIsLocked[0], eventId))
-                response = local_db_service.insert_action(whoIsLocked[0], eventId, hoIsLocked[1])
+                aThread = Thread(target=lambda x, arg1, arg2: x.put(apiService.post_action(arg1, arg2)), args=(que, whoIsLocked[0], eventId))
+                aThread.start()
+                
+                response = local_db_service.insert_action(whoIsLocked[0], eventId, whoIsLocked[1])
                 if showDetailInfo:
                     print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] User  id is -> {whoIsLocked[0]}')
-                #if not response.serverError:
-                #if response.message is not None: 
                 print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] Message -> {response.message}')
                 if response.messageCode == 1:
                     display.lcd_display_string(" Shift already", 1)
@@ -180,7 +184,7 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                     display.lcd_display_string(whoIsLocked[1], 2)
                     buzzer_ok(buzzer, buzzerDutyCycle)
                 elif response.messageCode == 9:
-                    display.lcd_display_string("  Official AB.", 1)
+                    display.lcd_display_string("Official Absence", 1)
                     display.lcd_display_string("   not closed", 2)
                     buzzer_error(buzzer, buzzerDutyCycle)
                 elif response.messageCode == 10:
@@ -188,28 +192,32 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
                     display.lcd_display_string("Please try again", 2)
                     buzzer_error(buzzer, buzzerDutyCycle)
                     if showDetailInfo:
-                        print('[WARNING] Message code 9 appeared.')
+                        print('[WARNING] Message code 10 appeared.')
                 else:
                     display.lcd_display_string("Unknown message", 1)
                     display.lcd_display_string("      code",2)
-                #else:
-                #    display.lcd_display_string("  Server error", 1)
-                #    buzzer_error(buzzer, buzzerDutyCycle)
+                    buzzer_error(buzzer, buzzerDutyCycle)
             sleep(3.9) # Shows lcd text and locks actions for time
             display.lcd_clear()
-            if (await task_response_external).serverError:
-                print('[ERROR] Server Error')
+            
+            aThread.join()
+            result_response_external = que.get()
+            if result_response_external.serverError:
+                print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] [ERROR] Server error. Deleting last action.')
+                local_db_service.delete_last_action()
+                display.lcd_display_string("Server Error", 1)
+                display.lcd_display_string("Reverting action", 2)
+                buzzer_error(buzzer, buzzerDutyCycle)
+                sleep(3.9)
+                display.lcd_clear()
+                
             inActionLock = False
-
-
-        def event_caller(button):
-            asyncio.run(event_callback(button))
             
 
-        GPIO.add_event_detect(buttonStart, GPIO.RISING, callback=lambda x: event_caller(buttonStart), bouncetime=bounceTime)
-        GPIO.add_event_detect(buttonEnd, GPIO.RISING, callback=lambda x: event_caller(buttonEnd), bouncetime=bounceTime)
-        GPIO.add_event_detect(buttonBreak, GPIO.RISING, callback=lambda x: event_caller(buttonBreak), bouncetime=bounceTime)
-        GPIO.add_event_detect(buttonTask, GPIO.RISING, callback=lambda x: event_caller(buttonTask), bouncetime=bounceTime)
+        GPIO.add_event_detect(buttonStart, GPIO.RISING, callback=lambda x: event_callback(buttonStart), bouncetime=bounceTime)
+        GPIO.add_event_detect(buttonEnd, GPIO.RISING, callback=lambda x: event_callback(buttonEnd), bouncetime=bounceTime)
+        GPIO.add_event_detect(buttonBreak, GPIO.RISING, callback=lambda x: event_callback(buttonBreak), bouncetime=bounceTime)
+        GPIO.add_event_detect(buttonTask, GPIO.RISING, callback=lambda x: event_callback(buttonTask), bouncetime=bounceTime)
 
         print(f'[INFO] [{strftime("%m-%d %H:%M:%S", getLocalTime())}] Loading encodings from file.')
         try:

@@ -1,11 +1,10 @@
 import os
-from trainer import train
 from take_image_with_face import delete_from_folder
 from take_image_with_face import face_image_taker
 
 
 def edit_person(fullName, cameraId, trainer):
-    print(f'[INFO] Editing -> {fullName}')
+    print(f'[INFO] Editing -> {fullName} (edits are done only locally)')
     print('Please choose: ')
     print('1.) Rename')  # change folder name, retrain
     print('2.) Retake facial data')  # delete folder, retake images, retrain
@@ -25,7 +24,7 @@ def edit_person(fullName, cameraId, trainer):
                 print('[ERROR] New id was not positive integer. Aborting.')
                 raise Exception('New id was not positive integer.')
             os.rename(f'./dataset/{fullName}', f'./dataset/{newId} {newFirstName} {newLastName}')
-        trainer.train(scaleFactor, minNeighbour, minSizeTuple)
+        trainer.train()
     elif choice == '2':
         print('[INFO] Deleting all images from directory and directory itself.')
         delete_from_folder(f'./dataset/{fullName}')
@@ -33,7 +32,7 @@ def edit_person(fullName, cameraId, trainer):
         success = face_image_taker(fullName, cameraId, scale_factor, minSizeTuple, minNeighbour)
         if not success:
             print('[INFO] Removing person from recognition model.')
-        trainer.train(scaleFactor, minNeighbour, minSizeTuple)
+        trainer.train()
     else:
         print('[INFO] Editing canceled.')
 
@@ -43,10 +42,10 @@ def getPeople():
 
 
 def remove_person(fullName, trainer):
-    print('[INFO] Removing all images for person and deleting directory.')
+    print('[INFO] Removing all images for person and deleting directory (removing is done locally only.')
     delete_from_folder(f'./dataset/{fullName}')
     os.rmdir(f'./dataset/{fullName}')
-    trainer.train(scaleFactor, minNeighbour, minSizeTuple)
+    trainer.train()
     
     
 def list_people(people):
