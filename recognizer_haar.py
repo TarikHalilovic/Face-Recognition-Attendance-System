@@ -133,6 +133,8 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
 
             aThread = None
             que = Queue()
+            response = None
+            
             if whoIsLocked[0] is None: # id is None which means user is Unknown
                 print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] Message -> Person not recognized, please look at camera and try again.')
                 
@@ -203,9 +205,10 @@ def run_recognize(cameraId, scaleFactor, minSizeTuple, tolerance, minNeighbour, 
             aThread.join()
             result_response_external = que.get()
             if result_response_external.serverError:
-                print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] [ERROR] Server error. Deleting last action.')
-                local_db_service.delete_last_action()
-                display.lcd_display_string("Server Error", 1)
+                print(f'[{strftime("%m-%d %H:%M:%S", getLocalTime())}] [ERROR] Server error. Reverting last action.')
+                if response.isSuccessful: # Check if anything was added to db
+                    local_db_service.delete_last_action()
+                display.lcd_display_string("  Server Error", 1)
                 display.lcd_display_string("Reverting action", 2)
                 buzzer_error(buzzer, buzzerDutyCycle)
                 sleep(3.9)

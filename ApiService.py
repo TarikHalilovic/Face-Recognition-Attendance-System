@@ -1,8 +1,10 @@
 import requests
+import urllib3
 from Model.ActionResponse import ActionResponse
 
 class ApiService:
     def __init__(self, server, username, password):
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         self.server = server
         self.username = username
         self.password = password
@@ -19,7 +21,8 @@ class ApiService:
                     'Content-Type': 'application/json',
                     'Authorization': self.tokenWithBearer
                 },
-                timeout=3.5
+                timeout=3.5,
+                verify=False
             )
             # serverError, isSuccessful, statusCode, message, fullName, errorCode
             # ActionResponse(True, False, response.status_code, None, None, None)
@@ -53,7 +56,8 @@ class ApiService:
                                         'Content-Type': 'application/json',
                                         'Authorization': self.tokenWithBearer
                                     },
-                                    timeout=3.5
+                                    timeout=3.5,
+                                    verify=False
             )
             if response.status_code != 201:
                 if response.status_code == 403:
@@ -80,7 +84,8 @@ class ApiService:
                                         'username': self.username,
                                         'passwordHash': self.password
                                     },
-                                    timeout=3.5
+                                    timeout=3.5,
+                                    verify=False
             )
             if response.status_code == 200:
                 self.tokenWithBearer = f'Bearer {response.text}'
