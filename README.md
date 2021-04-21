@@ -75,8 +75,8 @@ Frameworks, languages and tools used:
 #### Connected Repositories
 
 All parts of the project:<br/>
-[Backend - Current](https://github.com/TarikHalilovic/Automated-Attendance-System-Backend)<br />
+[Backend](https://github.com/TarikHalilovic/Automated-Attendance-System-Backend)<br />
 [Frontend](https://github.com/TarikHalilovic/Automated-Attendance-System-Frontend)<br />
-[Program that runs on Raspberry Pi](https://github.com/TarikHalilovic/Face-Recognition-Attendance-System)<br />
+[Program that runs on Raspberry Pi - Current](https://github.com/TarikHalilovic/Face-Recognition-Attendance-System)<br />
 <br />
 [Research paper](https://github.com/FITCommunity/Zavrsni-Radovi/blob/master/Radovi/2021/dr.%20sc.%20Elmir%20Babovi%C4%87/IB170222.pdf)
