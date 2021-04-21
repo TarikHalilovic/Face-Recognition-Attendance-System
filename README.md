@@ -6,14 +6,12 @@
 	<img src="https://imgur.com/3UC2Ss3.jpg" width="479" height="256" alt="Screen 2">
   </a>
 </p>
-<br />
 <p align="justify">
 Many organizations require a solution that will provide a way to automatically track employee attendance. Attendance records are consisted of events such as starting the work shift, leaving the work, leaving for break and coming back or similar events. Organizations that do not have a modern solution for attendance tracking process deal with this issue in ways like manually tracking data for which dedicated personnel is needed or they do not track the attendance at all. With this project, we will attempt to provide the answer to previously mentioned problem with the use of face recognition technique.
 </p>
 <p align="justify">
 Project is consisted of two key stages which are: construction of the terminal on Raspberry Pi platform that will be used by organization personnel while entering or leaving the organization premises, and building the web application for administrative personnel in Java programming language with Spring Boot framework for the backend and Javascript and React library for the construction of the frontend.
 </p>
-<br /><br />
 <p align="center">
   <a href="https://github.com/TarikHalilovic/Automated-Attendance-System-Backend">
     <img src="https://imgur.com/KojkIPZ.jpg" width="479" height="256" alt="Screen 3">
@@ -77,8 +75,8 @@ Frameworks, languages and tools used:
 #### Connected Repositories
 
 All parts of the project:<br/>
-[Backend](https://github.com/TarikHalilovic/Automated-Attendance-System-Backend)<br />
+[Backend - Current](https://github.com/TarikHalilovic/Automated-Attendance-System-Backend)<br />
 [Frontend](https://github.com/TarikHalilovic/Automated-Attendance-System-Frontend)<br />
-[Program that runs on Raspberry Pi - Current](https://github.com/TarikHalilovic/Face-Recognition-Attendance-System)<br />
+[Program that runs on Raspberry Pi](https://github.com/TarikHalilovic/Face-Recognition-Attendance-System)<br />
 <br />
 [Research paper](https://github.com/FITCommunity/Zavrsni-Radovi/blob/master/Radovi/2021/dr.%20sc.%20Elmir%20Babovi%C4%87/IB170222.pdf)
